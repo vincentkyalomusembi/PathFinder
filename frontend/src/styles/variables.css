@@ -1,0 +1,20 @@
+:root {
+  --primary: 37 99 235;
+  --secondary: 100 116 139;
+  --success: 16 185 129;
+  --warning: 245 158 11;
+  --error: 239 68 68;
+  --background: 248 250 252;
+  --surface: 255 255 255;
+  --text-primary: 30 41 59;
+  --text-secondary: 100 116 139;
+  --font-primary: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+[data-theme="dark"] {
+  --background: 30 41 59;
+  --surface: 51 65 85;
+  --text-primary: 255 255 255;
+  --text-secondary: 148 163 184;
+}
