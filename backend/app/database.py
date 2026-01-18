@@ -38,4 +38,50 @@ class RedisClient:
 
         return self.client.setex(redis_key, ttl, value)
 
-    def get_session_                
+    def get_session_data(self, session_id: str, key: str) -> Optional[Any]:
+        """Retrive data from session"""
+        redis_key = f"session: {session_id}:{key}"
+        value = self.client.get(redis_key)
+
+        if value is None:
+            return None
+
+        try:
+            return json.loads(value)
+        except (json.JSONDecodeError, TypeError):
+            return value
+
+    def delete_session(self, session_id: str) -> int:
+        """Delete all data for a session"""
+        pattern = f"session:{session_id}"
+        keys = self.client.keys(pattern)
+        if keys:
+            return self.client.delete(*keys)
+        return 0
+
+    def set_cache(self, key: str, value: Any, ttl: int = 300) -> bool:
+        """Set a cache entry (For API responses, not user-specific)"""
+        if isinstance(value, (dict, list)):
+            value = json.dumps(value)
+        return self.client.setex(f"cache:{key}", ttl, value)
+
+    def get_cache(self, key: str) -> Optional[Any]:
+        """Get a cache entry."""
+        value = self.client.get(f"cache:{key}")
+        if value is None:
+            return None
+        try:
+            return json.loads(value)
+        except (json.JSONDecodeError, TypeError):
+            return value
+
+    def ping(self) -> bool:
+        """check redis connection"""
+        try:
+            return self.client.ping()
+        except Exception:
+            return False
+
+#Global Redis instance
+redis_client = RedisClient()                        
+
