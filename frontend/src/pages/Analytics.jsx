@@ -1,196 +1,211 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { useApp } from '../context/AppContext.jsx';
-import FilterForm from '../components/forms/FilterForm.jsx';
-import JobDemandChart from '../components/charts/JobDemandChart.jsx';
-import SalaryTrendChart from '../components/charts/SalaryTrendChart.jsx';
-import SkillsChart from '../components/charts/SkillsChart.jsx';
-import CategoryPieChart from '../components/charts/CategoryPieChart.jsx';
-import LoadingSpinner from '../components/common/LoadingSpinner.jsx';
-import { analyticsService } from '../services/analyticsService.js';
-import { toast } from 'react-hot-toast';
-import { Activity, Download } from 'lucide-react';
-import clsx from 'clsx';
+import React, { useState, useEffect } from 'react';
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-export default function Analytics() {
-  const { setLoading: setGlobalLoading } = useApp();
-  const [filters, setFilters] = useState({
-    category: 'all',
-    location: '',
-    salaryMin: '',
-    dateRange: 'last-year',
-  });
-  const [data, setData] = useState({
-    demand: [],
-    salary: [],
-    skills: [],
-    categories: [],
-  });
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+const Analytics = () => {
+  const [demandData, setDemandData] = useState([]);
+  const [salaryData, setSalaryData] = useState([]);
+  const [skillsData, setSkillsData] = useState([]);
+  const [categoriesData, setCategoriesData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-      setGlobalLoading(true);
+    fetchAnalyticsData();
+  }, []);
 
-      try {
-        const [demandRes, salaryRes, skillsRes, categoriesRes] = await Promise.all([
-          analyticsService.getDemandTrends(filters),
-          analyticsService.getSalaryData(filters),
-          analyticsService.getSkills(filters),
-          analyticsService.getCategories(filters),
-        ]);
+  const fetchAnalyticsData = async () => {
+    try {
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      
+      const [demandRes, salaryRes, skillsRes, categoriesRes] = await Promise.all([
+        fetch(`${baseUrl}/api/analytics/demand`),
+        fetch(`${baseUrl}/api/analytics/salary`),
+        fetch(`${baseUrl}/api/analytics/skills`),
+        fetch(`${baseUrl}/api/analytics/categories`)
+      ]);
 
-        setData({
-          demand: demandRes || [],
-          salary: salaryRes || [],
-          skills: skillsRes || [],
-          categories: categoriesRes || [],
-        });
-      } catch (err) {
-        setError('Failed to load analytics data. Please check your connection.');
-        toast.error('Analytics fetch error. Refreshing...');
-        console.error('Analytics error:', err);
-      } finally {
-        setIsLoading(false);
-        setGlobalLoading(false);
-      }
-    };
+      const [demand, salary, skills, categories] = await Promise.all([
+        demandRes.json(),
+        salaryRes.json(),
+        skillsRes.json(),
+        categoriesRes.json()
+      ]);
 
-    fetchData();
-  }, [filters, setGlobalLoading]);
-
-  const handleFilterChange = (newFilters) => {
-    setFilters((prev) => ({ ...prev, ...newFilters }));
-    toast.info('Filters updated. Reloading charts...');
+      setDemandData(demand);
+      setSalaryData(salary);
+      setSkillsData(skills);
+      setCategoriesData(categories);
+    } catch (error) {
+      console.error('Error fetching analytics data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleExport = () => {
-    const exportData = { filters, ...data, timestamp: new Date().toISOString() };
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `pathfinder-analytics-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success('Analytics data exported!');
-  };
-
-  if (error && !isLoading) {
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="text-center max-w-md space-y-4">
-          <Activity className="w-16 h-16 text-error mx-auto" />
-          <h2 className="text-2xl font-bold text-text-primary">Analytics Unavailable</h2>
-          <p className="text-text-secondary">{error}</p>
-          <button onClick={() => window.location.reload()} className="btn-primary">
-            Retry
-          </button>
+      <div className="container" style={{ padding: 'var(--space-16) var(--space-6)' }}>
+        <div className="text-center">
+          <div style={{ 
+            width: '40px', 
+            height: '40px', 
+            border: '4px solid var(--gray-200)', 
+            borderTop: '4px solid var(--primary-600)',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto'
+          }}></div>
+          <p className="mt-4 text-gray-600">Loading analytics data...</p>
         </div>
       </div>
     );
   }
 
-  // Guard all data as arrays/objects
-  const safeData = {
-    demand: Array.isArray(data.demand) ? data.demand : [],
-    salary: Array.isArray(data.salary) ? data.salary : [],
-    skills: Array.isArray(data.skills) ? data.skills : [],
-    categories: Array.isArray(data.categories) ? data.categories : [],
-  };
-
   return (
-    <motion.main
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="min-h-screen py-8 px-4 space-y-8"
-      role="main"
-      aria-label="Analytics Dashboard"
-    >
-      <motion.div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-bold text-text-primary flex items-center">
-            <Activity className="w-8 h-8 mr-3 text-primary" />
-            Market Analytics
-          </h1>
-          <p className="text-text-secondary">Explore trends, salaries, and skills across industries.</p>
+    <div className="container" style={{ padding: 'var(--space-8) var(--space-6)' }}>
+      <div className="mb-8">
+        <h1>Job Market Analytics</h1>
+        <p className="text-lg text-gray-600">
+          Comprehensive insights into job market trends and opportunities
+        </p>
+      </div>
+
+      {/* Job Demand Trends */}
+      <div className="chart-container mb-6">
+        <div className="card-header">
+          <h3 className="card-title">Job Demand Trends</h3>
+          <p className="card-description">Monthly job posting volume over time</p>
         </div>
-        <div className="flex items-center space-x-4">
-          <FilterForm onFilterChange={handleFilterChange} filters={filters} />
-          <button
-            onClick={handleExport}
-            className="flex items-center space-x-2 px-4 py-2 bg-surface border border-surface/50 rounded-lg hover:bg-primary/5 transition-colors"
-            aria-label="Export analytics data"
-          >
-            <Download className="w-4 h-4" />
-            <span className="hidden sm:inline">Export</span>
-          </button>
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={demandData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--gray-200)" />
+            <XAxis dataKey="month" stroke="var(--gray-600)" />
+            <YAxis stroke="var(--gray-600)" />
+            <Tooltip 
+              contentStyle={{ 
+                background: 'white', 
+                border: '1px solid var(--gray-200)',
+                borderRadius: 'var(--radius-md)'
+              }} 
+            />
+            <Line 
+              type="monotone" 
+              dataKey="jobs" 
+              stroke="var(--primary-600)" 
+              strokeWidth={3}
+              dot={{ fill: 'var(--primary-600)', strokeWidth: 2, r: 6 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="grid grid-cols-2 gap-6 mb-6">
+        {/* Salary by Category */}
+        <div className="chart-container">
+          <div className="card-header">
+            <h3 className="card-title">Average Salary by Category</h3>
+            <p className="card-description">Compensation across different industries</p>
+          </div>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={salaryData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--gray-200)" />
+              <XAxis dataKey="category" stroke="var(--gray-600)" />
+              <YAxis stroke="var(--gray-600)" />
+              <Tooltip 
+                contentStyle={{ 
+                  background: 'white', 
+                  border: '1px solid var(--gray-200)',
+                  borderRadius: 'var(--radius-md)'
+                }}
+                formatter={(value) => [`$${value.toLocaleString()}`, 'Salary']}
+              />
+              <Bar dataKey="salary" fill="var(--primary-600)" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
-      </motion.div>
 
-      {isLoading ? (
-        <LoadingSpinner />
-      ) : (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-8"
-          role="region"
-          aria-live="polite"
-        >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <motion.section
-              className="card"
-              whileHover={{ y: -2 }}
-              role="img"
-              aria-label="Job demand trends chart"
-            >
-              <h3 className="text-xl font-bold mb-4 text-text-primary flex items-center">
-                Job Demand Trends
-                <span className={clsx('ml-auto text-xs px-2 py-1 rounded-full bg-primary/10 text-primary', { 'bg-warning/10 text-warning': filters.category !== 'all' })}>
-                  {filters.category === 'all' ? 'All' : filters.category}
-                </span>
-              </h3>
-              <JobDemandChart data={safeData.demand} />
-            </motion.section>
-
-            <motion.section
-              className="card"
-              whileHover={{ y: -2 }}
-              role="img"
-              aria-label="Salary trends chart"
-            >
-              <h3 className="text-xl font-bold mb-4 text-text-primary">Salary Distribution</h3>
-              <SalaryTrendChart data={safeData.salary} />
-            </motion.section>
+        {/* Category Distribution */}
+        <div className="chart-container">
+          <div className="card-header">
+            <h3 className="card-title">Job Distribution by Category</h3>
+            <p className="card-description">Market share of different job categories</p>
           </div>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={categoriesData}
+                cx="50%"
+                cy="50%"
+                outerRadius={80}
+                dataKey="percentage"
+                label={({ name, percentage }) => `${name}: ${percentage}%`}
+              >
+                {categoriesData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip 
+                contentStyle={{ 
+                  background: 'white', 
+                  border: '1px solid var(--gray-200)',
+                  borderRadius: 'var(--radius-md)'
+                }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <motion.section
-              className="card"
-              whileHover={{ y: -2 }}
-              role="img"
-              aria-label="Skills word cloud"
-            >
-              <h3 className="text-xl font-bold mb-4 text-text-primary">Top Skills Forecast</h3>
-              <SkillsChart data={safeData.skills} />
-            </motion.section>
+      {/* Top Skills */}
+      <div className="chart-container">
+        <div className="card-header">
+          <h3 className="card-title">Most In-Demand Skills</h3>
+          <p className="card-description">Skills with highest job posting frequency</p>
+        </div>
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={skillsData} layout="horizontal">
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--gray-200)" />
+            <XAxis type="number" stroke="var(--gray-600)" />
+            <YAxis dataKey="name" type="category" stroke="var(--gray-600)" width={100} />
+            <Tooltip 
+              contentStyle={{ 
+                background: 'white', 
+                border: '1px solid var(--gray-200)',
+                borderRadius: 'var(--radius-md)'
+              }}
+              formatter={(value) => [value.toLocaleString(), 'Job Postings']}
+            />
+            <Bar dataKey="count" fill="var(--success-500)" radius={[0, 4, 4, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
 
-            <motion.section
-              className="card"
-              whileHover={{ y: -2 }}
-              role="img"
-              aria-label="Category comparison pie chart"
-            >
-              <h3 className="text-xl font-bold mb-4 text-text-primary">Category Comparison</h3>
-              <CategoryPieChart data={safeData.categories} />
-            </motion.section>
-          </div>
-        </motion.div>
-      )}
-    </motion.main>
+      {/* Skills Trend Indicators */}
+      <div className="mt-6">
+        <h3 className="mb-4">Skill Trends</h3>
+        <div className="grid grid-cols-3 gap-4">
+          {skillsData.map((skill, index) => (
+            <div key={index} className="card">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-semibold">{skill.name}</h4>
+                  <p className="text-sm text-gray-600">{skill.count.toLocaleString()} jobs</p>
+                </div>
+                <div className={`px-3 py-1 rounded text-sm font-medium ${
+                  skill.trend === 'up' 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-gray-100 text-gray-800'
+                }`}>
+                  {skill.trend === 'up' ? '↗️ Rising' : '➡️ Stable'}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
-}
+};
+
+export default Analytics;
