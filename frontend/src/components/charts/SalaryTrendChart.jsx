@@ -1,5 +1,13 @@
-import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Bar, CartesianGrid } from 'recharts';
-import { motion } from 'framer-motion';
+import {
+  ResponsiveContainer,
+  BarChart,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Bar,
+  CartesianGrid,
+} from "recharts";
+import { motion } from "framer-motion";
 
 export default function SalaryTrendChart({ data = [] }) {
   // Ensure array
@@ -29,9 +37,17 @@ export default function SalaryTrendChart({ data = [] }) {
       <ResponsiveContainer width="100%" height={350}>
         <BarChart data={safeData}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--surface/20)" />
-          <XAxis dataKey="category" tick={{ fill: 'var(--text-secondary)' }} />
-          <YAxis tick={{ fill: 'var(--text-secondary)' }} />
-          <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, 'Average Salary']} />
+          <XAxis
+            dataKey="category"
+            tick={{ fill: "rgb(var(--text-primary))" }}
+          />
+          <YAxis tick={{ fill: "rgb(var(--text-primary))" }} />
+          <Tooltip
+            formatter={(value) => [
+              `$${value.toLocaleString()}`,
+              "Average Salary",
+            ]}
+          />
           <Bar dataKey="salary" fill="var(--success)" radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
