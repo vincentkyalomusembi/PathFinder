@@ -1,127 +1,257 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useApp } from '../context/AppContext.jsx';
-import CareerForm from '../components/forms/CareerForm.jsx';
-import RecommendationCard from '../components/cards/RecommendationCard.jsx';
-import LoadingSpinner from '../components/common/LoadingSpinner.jsx';
-import { aiService } from '../services/aiService.js';
-import { toast } from 'react-hot-toast';
-import { Brain, ArrowLeft } from 'lucide-react';
-import clsx from 'clsx';
+import React, { useState } from 'react';
 
-export default function CareerRecommender() {
-  const { setLoading } = useApp();
-  const [step, setStep] = useState(1);
+const CareerRecommender = () => {
+  const [formData, setFormData] = useState({
+    skills: '',
+    experience: '',
+    interests: '',
+    goals: '',
+    education: '',
+    currentRole: ''
+  });
   const [recommendations, setRecommendations] = useState([]);
-  const [formData, setFormData] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const totalSteps = 3;
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
 
-  const handleFormChange = (data) => setFormData(data);
-
-  const handleSubmit = async (data) => {
-    setIsLoading(true);
-    setError(null);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     setLoading(true);
 
     try {
-      const res = await aiService.getRecommendations({ ...formData, ...data });
-      setRecommendations(res.recommendations || res.data || []);
-      setStep(2);
-      toast.success('Personalized recommendations ready!');
-    } catch (err) {
-      setError('Failed to generate recommendations. Please try again.');
-      toast.error('AI recommendation error. Check your inputs.');
-      console.error('Career Recommender error:', err);
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${baseUrl}/api/ai/recommend`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          skills: formData.skills.split(',').map(s => s.trim()).filter(s => s),
+          experience: formData.experience,
+          interests: formData.interests.split(',').map(s => s.trim()).filter(s => s),
+          goals: formData.goals,
+          education: formData.education,
+          current_role: formData.currentRole
+        }),
+      });
+
+      const data = await response.json();
+      setRecommendations(data.recommendations || []);
+    } catch (error) {
+      console.error('Error getting recommendations:', error);
     } finally {
-      setIsLoading(false);
       setLoading(false);
     }
   };
 
-  const handleBack = () => {
-    setStep(step - 1);
-    setError(null);
-  };
-
-  const handleReset = () => {
-    setStep(1);
-    setRecommendations([]);
-    setFormData({});
-    setError(null);
-    aiService.clearCache();
-  };
-
   return (
-    <motion.main initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="min-h-screen py-8 px-4 max-w-4xl mx-auto space-y-8" role="main">
-      <motion.div className="text-center" initial={{ scale: 0.95 }} animate={{ scale: 1 }}>
-        <Brain className="w-12 h-12 text-primary mx-auto mb-4" />
-        <h1 className="text-3xl md:text-4xl font-bold text-text-primary mb-2">AI Career Recommender</h1>
-        <p className="text-text-secondary max-w-md mx-auto">Get personalized job suggestions and roadmaps based on your skills and goals.</p>
-      </motion.div>
+    <div className="container" style={{ padding: 'var(--space-8) var(--space-6)' }}>
+      <div className="mb-8">
+        <h1>AI Career Recommender</h1>
+        <p className="text-lg text-gray-600">
+          Get personalized career recommendations powered by AI
+        </p>
+      </div>
 
-      <AnimatePresence mode="wait">
-        {step === 1 && (
-          <motion.section
-            key="form"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="max-w-2xl mx-auto"
-          >
-            <h2 className="text-2xl font-bold mb-6 text-center">Tell Us About You</h2>
-            <CareerForm onSubmit={handleSubmit} onChange={handleFormChange} isLoading={isLoading} error={error} />
-          </motion.section>
-        )}
+      <div className="grid grid-cols-2 gap-8">
+        {/* Form */}
+        <div className="card">
+          <div className="card-header">
+            <h3 className="card-title">Tell us about yourself</h3>
+            <p className="card-description">
+              Provide information about your background and career goals
+            </p>
+          </div>
 
-        {step === 2 && (
-          <motion.section
-            key="results"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            className="space-y-6"
-          >
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold">Your Personalized Roadmap</h2>
-              <button
-                onClick={handleBack}
-                className="flex items-center text-secondary hover:text-primary transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4 mr-1" />
-                Edit Details
-              </button>
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label className="form-label">Current Skills</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="e.g., Python, React, Project Management (comma-separated)"
+                value={formData.skills}
+                onChange={(e) => handleInputChange('skills', e.target.value)}
+              />
             </div>
 
-            {isLoading ? (
-              <LoadingSpinner />
-            ) : error ? (
-              <div className="text-center py-8 bg-surface/50 rounded-lg p-6" role="alert">
-                <p className="text-error mb-4">{error}</p>
-                <button onClick={handleReset} className="btn-primary">Try Again</button>
-              </div>
-            ) : recommendations.length > 0 ? (
-              <div className="grid md:grid-cols-2 gap-6">
+            <div className="form-group">
+              <label className="form-label">Experience Level</label>
+              <select
+                className="form-select"
+                value={formData.experience}
+                onChange={(e) => handleInputChange('experience', e.target.value)}
+              >
+                <option value="">Select experience level</option>
+                <option value="entry">Entry Level (0-2 years)</option>
+                <option value="mid">Mid Level (3-5 years)</option>
+                <option value="senior">Senior Level (6-10 years)</option>
+                <option value="executive">Executive Level (10+ years)</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Interests</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="e.g., Technology, Education, Healthcare (comma-separated)"
+                value={formData.interests}
+                onChange={(e) => handleInputChange('interests', e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Career Goals</label>
+              <textarea
+                className="form-textarea"
+                rows="3"
+                placeholder="Describe your career aspirations and what you want to achieve"
+                value={formData.goals}
+                onChange={(e) => handleInputChange('goals', e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Education</label>
+              <select
+                className="form-select"
+                value={formData.education}
+                onChange={(e) => handleInputChange('education', e.target.value)}
+              >
+                <option value="">Select education level</option>
+                <option value="high-school">High School</option>
+                <option value="associate">Associate Degree</option>
+                <option value="bachelor">Bachelor's Degree</option>
+                <option value="master">Master's Degree</option>
+                <option value="phd">PhD</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Current Role</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="e.g., Software Developer, Teacher, Student"
+                value={formData.currentRole}
+                onChange={(e) => handleInputChange('currentRole', e.target.value)}
+              />
+            </div>
+
+            <button 
+              type="submit" 
+              className="btn btn-primary btn-lg"
+              disabled={loading}
+              style={{ width: '100%' }}
+            >
+              {loading ? 'Getting Recommendations...' : 'Get AI Recommendations'}
+            </button>
+          </form>
+        </div>
+
+        {/* Recommendations */}
+        <div>
+          {loading && (
+            <div className="card text-center">
+              <div style={{ 
+                width: '40px', 
+                height: '40px', 
+                border: '4px solid var(--gray-200)', 
+                borderTop: '4px solid var(--primary-600)',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite',
+                margin: '0 auto var(--space-4)'
+              }}></div>
+              <p>AI is analyzing your profile...</p>
+            </div>
+          )}
+
+          {recommendations.length > 0 && (
+            <div>
+              <h3 className="mb-4">Recommended Career Paths</h3>
+              <div className="space-y-4">
                 {recommendations.map((rec, index) => (
-                  <motion.div key={rec.id || index} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }}>
-                    <RecommendationCard rec={rec} />
-                  </motion.div>
+                  <div key={index} className="card">
+                    <h4 className="font-semibold text-lg mb-2">{rec.title}</h4>
+                    <p className="text-gray-700 mb-4">{rec.description}</p>
+                    
+                    <div className="mb-4">
+                      <h5 className="font-medium mb-2">Required Skills:</h5>
+                      <div className="flex flex-wrap gap-2">
+                        {rec.required_skills?.map((skill, skillIndex) => (
+                          <span key={skillIndex} className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-sm text-gray-600">Salary Range: </span>
+                        <span className="font-semibold text-green-600">{rec.salary_range}</span>
+                      </div>
+                      <div>
+                        <span className="text-sm text-gray-600">Growth: </span>
+                        <span className={`font-medium ${
+                          rec.growth_potential === 'High' || rec.growth_potential === 'Very High' 
+                            ? 'text-green-600' 
+                            : 'text-yellow-600'
+                        }`}>
+                          {rec.growth_potential}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
-            ) : (
-              <p className="text-center text-text-secondary py-8">No recommendations available. Please complete the form.</p>
-            )}
-
-            <div className="text-center pt-6 border-t border-surface/50">
-              <button onClick={handleReset} className="btn-primary px-6 py-3 rounded-full">
-                Start Over
-              </button>
             </div>
-          </motion.section>
-        )}
-      </AnimatePresence>
-    </motion.main>
+          )}
+
+          {!loading && recommendations.length === 0 && (
+            <div className="card text-center">
+              <div style={{ fontSize: '3rem', marginBottom: 'var(--space-4)' }}>🤖</div>
+              <h3>Ready for AI Insights</h3>
+              <p className="text-gray-600">
+                Fill out the form to get personalized career recommendations
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Tips Section */}
+      <div className="mt-12">
+        <h3 className="mb-6">Tips for Better Recommendations</h3>
+        <div className="grid grid-cols-3 gap-6">
+          <div className="card text-center">
+            <div style={{ fontSize: '2rem', marginBottom: 'var(--space-3)' }}>💡</div>
+            <h4 className="font-semibold mb-2">Be Specific</h4>
+            <p className="text-sm text-gray-600">
+              List specific skills and technologies you know or want to learn
+            </p>
+          </div>
+          <div className="card text-center">
+            <div style={{ fontSize: '2rem', marginBottom: 'var(--space-3)' }}>🎯</div>
+            <h4 className="font-semibold mb-2">Clear Goals</h4>
+            <p className="text-sm text-gray-600">
+              Describe what you want to achieve in your career
+            </p>
+          </div>
+          <div className="card text-center">
+            <div style={{ fontSize: '2rem', marginBottom: 'var(--space-3)' }}>📈</div>
+            <h4 className="font-semibold mb-2">Growth Mindset</h4>
+            <p className="text-sm text-gray-600">
+              Consider roles that challenge you and offer learning opportunities
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   );
-}
+};
+
+export default CareerRecommender;

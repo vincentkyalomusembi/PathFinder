@@ -1,6 +1,4 @@
 """Pydantic schemas for request/response validation"""
-from token import OP
-from unicodedata import category
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 
@@ -27,7 +25,7 @@ class RecommendationRequest(BaseModel):
 class SkillsAnalysisRequest(BaseModel):
     text: str
 
-class RoadMapRequest(BaseModel):
+class RoadmapRequest(BaseModel):
     skills: Optional[List[str]] = []
     goals: Optional[str] = None
     target_role: Optional[str] = None
@@ -39,7 +37,7 @@ class FitPredictionRequest(BaseModel):
     target_role: Optional[str] = None
 
 class RecommendationResponse(BaseModel):
-    recommendation: List[Dict[str, Any]]
+    recommendations: List[Dict[str, Any]]
 
 #Analytics schemas
 class AnalyticsFilters(BaseModel):
@@ -61,7 +59,23 @@ class SkillData(BaseModel):
     count: int
     trend: Optional[str] = None
 
-class CategoryData(BaseModel):
+# KCSE Career Guidance Schemas
+class KCSECareerRequest(BaseModel):
+    cluster_points: float
+    interests: List[str]
+    preferred_subjects: Optional[List[str]] = []
+    budget_range: Optional[str] = "medium"
+
+class CareerOption(BaseModel):
     name: str
-    count: int
-    percentage: float                                        
+    description: str
+    required_points: float
+    universities: List[str]
+    job_prospects: str
+    salary_range: str
+    match_percentage: int
+
+class KCSECareerResponse(BaseModel):
+    eligible_careers: List[CareerOption]
+    related_careers: List[CareerOption]
+    alternative_paths: List[Dict[str, Any]]                                        

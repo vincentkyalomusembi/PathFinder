@@ -3,7 +3,7 @@ from fastapi import APIRouter, Query, HTTPException
 from typing import Optional, List
 from app.schemas import JobResponse
 from app.database import redis_client
-from app.services.cache_service import get_cache_key, get_cached_data
+from app.services.cache_service import get_cache_key, get_cached_data, set_cached_data
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
