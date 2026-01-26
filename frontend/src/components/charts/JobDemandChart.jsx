@@ -1,5 +1,14 @@
-import { ResponsiveContainer, LineChart, XAxis, YAxis, Tooltip, Legend, Line, CartesianGrid } from 'recharts';
-import { motion } from 'framer-motion';
+import {
+  ResponsiveContainer,
+  LineChart,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  Line,
+  CartesianGrid,
+} from "recharts";
+import { motion } from "framer-motion";
 
 export default function JobDemandChart({ data = [] }) {
   // Ensure array
@@ -29,11 +38,17 @@ export default function JobDemandChart({ data = [] }) {
       <ResponsiveContainer width="100%" height={350}>
         <LineChart data={safeData}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--surface/20)" />
-          <XAxis dataKey="month" tick={{ fill: 'var(--text-secondary)' }} />
-          <YAxis tick={{ fill: 'var(--text-secondary)' }} />
-          <Tooltip formatter={(value) => [`${value} jobs`, 'Demand']} />
+          <XAxis dataKey="month" tick={{ fill: "rgb(var(--text-primary))" }} />
+          <YAxis tick={{ fill: "rgb(var(--text-primary))" }} />
+          <Tooltip formatter={(value) => [`${value} jobs`, "Demand"]} />
           <Legend />
-          <Line type="monotone" dataKey="jobs" stroke="var(--primary)" strokeWidth={2} dot={{ fill: 'var(--primary)' }} />
+          <Line
+            type="monotone"
+            dataKey="jobs"
+            stroke="var(--primary)"
+            strokeWidth={2}
+            dot={{ fill: "var(--primary)" }}
+          />
         </LineChart>
       </ResponsiveContainer>
     </motion.div>
