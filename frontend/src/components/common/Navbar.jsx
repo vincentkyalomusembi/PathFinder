@@ -11,6 +11,7 @@ const Navbar = () => {
     { path: '/analytics', label: 'Analytics' },
     { path: '/career', label: 'Career AI' },
     { path: '/kcse-guide', label: 'KCSE Guide' },
+    { path: '/scraper', label: 'Job Scraper' },
   ];
 
   return (

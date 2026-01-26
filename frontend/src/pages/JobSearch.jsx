@@ -12,8 +12,19 @@ const JobSearch = () => {
   });
 
   useEffect(() => {
-    fetchJobs();
+    ensureFreshData();
   }, []);
+
+  const ensureFreshData = async () => {
+    try {
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      await fetch(`${baseUrl}/api/auto/ensure-fresh-data`, { method: 'POST' });
+      fetchJobs();
+    } catch (error) {
+      console.error('Error ensuring fresh data:', error);
+      fetchJobs();
+    }
+  };
 
   useEffect(() => {
     filterJobs();
@@ -185,10 +196,16 @@ const JobSearch = () => {
               </div>
               
               <div className="ml-6">
-                <button className="btn btn-primary">
+                <a 
+                  href={job.apply_url || '#'} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="btn btn-primary"
+                  style={{ display: 'block', marginBottom: 'var(--space-2)' }}
+                >
                   Apply Now
-                </button>
-                <button className="btn btn-secondary mt-2" style={{ display: 'block', width: '100%' }}>
+                </a>
+                <button className="btn btn-secondary" style={{ display: 'block', width: '100%' }}>
                   Save Job
                 </button>
               </div>

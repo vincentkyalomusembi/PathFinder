@@ -4,10 +4,11 @@ from typing import Optional, List
 from app.schemas import JobResponse
 from app.database import redis_client
 from app.services.cache_service import get_cache_key, get_cached_data, set_cached_data
+from app.services.job_scraper import job_scraper
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
-#Mock job data - in production, fetch from external apis or scrape
+# Mock job data - fallback when scraping fails
 MOCK_JOBS = [
     {
         "id": 1,
@@ -40,21 +41,31 @@ MOCK_JOBS = [
         "skills": ["Python", "Machine Learning", "SQL"]
     }
 ]
+
 @router.get("", response_model=List[JobResponse])
 async def get_jobs(
     q: Optional[str] = Query(None, description="Search query"),
     category: Optional[str] = Query(None),
     location: Optional[str] = Query(None),
-    salary_min: Optional[int] = Query(None)
+    salary_min: Optional[int] = Query(None),
+    use_scraped: bool = Query(True, description="Use scraped jobs if available")
 ):
     """Get jobs with optional filters."""
-    cache_key = get_cache_key("jobs", {"q": q, "category": category, "location": location, "salary_min": salary_min})
+    cache_key = get_cache_key("jobs", {"q": q, "category": category, "location": location, "salary_min": salary_min, "scraped": use_scraped})
     cached = get_cached_data(cache_key)
     if cached:
         return cached
     
+    # Try to get scraped jobs first
+    jobs_data = MOCK_JOBS.copy()
+    
+    if use_scraped:
+        scraped_jobs = get_cached_data("scraped_jobs")
+        if scraped_jobs:
+            jobs_data = scraped_jobs
+    
     # Filter jobs
-    filtered_jobs = MOCK_JOBS.copy()
+    filtered_jobs = jobs_data.copy()
     
     if q:
         q_lower = q.lower()

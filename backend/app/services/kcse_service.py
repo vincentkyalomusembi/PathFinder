@@ -1,5 +1,6 @@
 """KCSE career guidance service."""
 from typing import Dict, List, Any
+from .gemini_service import GeminiService
 
 class KCSEService:
     """Service for KCSE career guidance and recommendations."""
@@ -7,6 +8,7 @@ class KCSEService:
     def __init__(self):
         self.career_database = self._load_career_data()
         self.universities = self._load_university_data()
+        self.gemini_service = GeminiService()
 
     def _load_career_data(self) -> Dict[str, Any]:
         """Load career data with cluster point requirements."""
@@ -112,6 +114,13 @@ class KCSEService:
             {"name": "USIU", "type": "Private", "fees_range": "KSh 300,000 - 500,000"},
             {"name": "Daystar University", "type": "Private", "fees_range": "KSh 150,000 - 300,000"}
         ]
+
+    def get_ai_recommendations(self, cluster_points: float, interests: List[str], 
+                             preferred_subjects: List[str], budget_preference: str = "any") -> Dict[str, Any]:
+        """Get AI-powered course and university recommendations."""
+        return self.gemini_service.get_kcse_recommendations(
+            cluster_points, interests, preferred_subjects, budget_preference
+        )
 
     def get_career_recommendations(self, cluster_points: float, interests: List[str], 
                                  preferred_subjects: List[str], budget_range: str) -> Dict[str, List]:

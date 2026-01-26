@@ -3,43 +3,9 @@ from fastapi import APIRouter, Query
 from typing import Optional, List
 from app.schemas import DemandTrend, SalaryData, SkillData, CategoryData
 from app.services.cache_service import get_cache_key, get_cached_data, set_cached_data
+from app.services.analytics_service import analytics_service
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
-
-
-# Mock data - in production, generate from real job market data
-MOCK_DEMAND_TRENDS = [
-    {"month": "Jan", "jobs": 1000},
-    {"month": "Feb", "jobs": 1200},
-    {"month": "Mar", "jobs": 1100},
-    {"month": "Apr", "jobs": 1300},
-    {"month": "May", "jobs": 1400},
-    {"month": "Jun", "jobs": 1500},
-]
-
-MOCK_SALARY_DATA = [
-    {"category": "Tech", "salary": 120000},
-    {"category": "Teaching", "salary": 60000},
-    {"category": "Hospitality", "salary": 50000},
-    {"category": "Agriculture", "salary": 55000},
-]
-
-MOCK_SKILLS_DATA = [
-    {"name": "Python", "count": 5000, "trend": "up"},
-    {"name": "React", "count": 4500, "trend": "up"},
-    {"name": "JavaScript", "count": 4000, "trend": "stable"},
-    {"name": "Node.js", "count": 3500, "trend": "up"},
-    {"name": "SQL", "count": 3000, "trend": "stable"},
-]
-
-MOCK_CATEGORIES_DATA = [
-    {"name": "Tech", "count": 50000, "percentage": 45.5},
-    {"name": "Teaching", "count": 20000, "percentage": 18.2},
-    {"name": "Hospitality", "count": 15000, "percentage": 13.6},
-    {"name": "Agriculture", "count": 10000, "percentage": 9.1},
-    {"name": "Other", "count": 15000, "percentage": 13.6},
-]
-
 
 @router.get("/demand", response_model=List[DemandTrend])
 async def get_demand_trends(
@@ -48,7 +14,7 @@ async def get_demand_trends(
     salaryMin: Optional[int] = Query(None),
     dateRange: Optional[str] = Query("last-year")
 ):
-    """Get job demand trends."""
+    """Get job demand trends from real scraped data."""
     cache_key = get_cache_key("analytics_demand", {
         "category": category,
         "location": location,
@@ -60,8 +26,12 @@ async def get_demand_trends(
     if cached:
         return cached
     
-    # Filter/modify data based on params (simplified)
-    result = MOCK_DEMAND_TRENDS.copy()
+    # Get scraped jobs data
+    scraped_jobs = get_cached_data("scraped_jobs") or []
+    
+    # Generate analytics from real data
+    result = analytics_service.generate_demand_trends(scraped_jobs)
+    
     set_cached_data(cache_key, result, ttl=300)
     return result
 
@@ -72,7 +42,7 @@ async def get_salary_data(
     salaryMin: Optional[int] = Query(None),
     dateRange: Optional[str] = Query("last-year")
 ):
-    """Get salary distribution data."""
+    """Get salary distribution from real scraped data."""
     cache_key = get_cache_key("analytics_salary", {
         "category": category,
         "location": location,
@@ -84,7 +54,12 @@ async def get_salary_data(
     if cached:
         return cached
     
-    result = MOCK_SALARY_DATA.copy()
+    # Get scraped jobs data
+    scraped_jobs = get_cached_data("scraped_jobs") or []
+    
+    # Generate analytics from real data
+    result = analytics_service.generate_salary_data(scraped_jobs)
+    
     set_cached_data(cache_key, result, ttl=300)
     return result
 
@@ -95,7 +70,7 @@ async def get_skills(
     salaryMin: Optional[int] = Query(None),
     dateRange: Optional[str] = Query("last-year")
 ):
-    """Get top skills data."""
+    """Get top skills from real scraped data."""
     cache_key = get_cache_key("analytics_skills", {
         "category": category,
         "location": location,
@@ -107,7 +82,12 @@ async def get_skills(
     if cached:
         return cached
     
-    result = MOCK_SKILLS_DATA.copy()
+    # Get scraped jobs data
+    scraped_jobs = get_cached_data("scraped_jobs") or []
+    
+    # Generate analytics from real data
+    result = analytics_service.generate_skills_data(scraped_jobs)
+    
     set_cached_data(cache_key, result, ttl=300)
     return result
 
@@ -118,7 +98,7 @@ async def get_categories(
     salaryMin: Optional[int] = Query(None),
     dateRange: Optional[str] = Query("last-year")
 ):
-    """Get category distribution data."""
+    """Get category distribution from real scraped data."""
     cache_key = get_cache_key("analytics_categories", {
         "category": category,
         "location": location,
@@ -130,6 +110,11 @@ async def get_categories(
     if cached:
         return cached
     
-    result = MOCK_CATEGORIES_DATA.copy()
+    # Get scraped jobs data
+    scraped_jobs = get_cached_data("scraped_jobs") or []
+    
+    # Generate analytics from real data
+    result = analytics_service.generate_categories_data(scraped_jobs)
+    
     set_cached_data(cache_key, result, ttl=300)
     return result
