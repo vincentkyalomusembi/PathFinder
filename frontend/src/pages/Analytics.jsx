@@ -11,8 +11,19 @@ const Analytics = () => {
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
   useEffect(() => {
-    fetchAnalyticsData();
+    ensureFreshData();
   }, []);
+
+  const ensureFreshData = async () => {
+    try {
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      await fetch(`${baseUrl}/api/auto/ensure-fresh-data`, { method: 'POST' });
+      fetchAnalyticsData();
+    } catch (error) {
+      console.error('Error ensuring fresh data:', error);
+      fetchAnalyticsData();
+    }
+  };
 
   const fetchAnalyticsData = async () => {
     try {

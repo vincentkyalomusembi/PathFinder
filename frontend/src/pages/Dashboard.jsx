@@ -13,8 +13,19 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchDashboardData();
+    ensureFreshData();
   }, []);
+
+  const ensureFreshData = async () => {
+    try {
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      await fetch(`${baseUrl}/api/auto/ensure-fresh-data`, { method: 'POST' });
+      fetchDashboardData();
+    } catch (error) {
+      console.error('Error ensuring fresh data:', error);
+      fetchDashboardData();
+    }
+  };
 
   const fetchDashboardData = async () => {
     try {

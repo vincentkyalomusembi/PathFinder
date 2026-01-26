@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.routes import jobs, ai, analytics, kcse
+from app.routes import jobs, ai, analytics, kcse, scraper, auto, test
 from app.database import redis_client
 
 app = FastAPI(
@@ -25,6 +25,9 @@ app.include_router(jobs.router, prefix="/api")
 app.include_router(ai.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
 app.include_router(kcse.router, prefix="/api")
+app.include_router(scraper.router, prefix="/api")
+app.include_router(auto.router, prefix="/api")
+app.include_router(test.router, prefix="/api")
 
 
 @app.get("/")

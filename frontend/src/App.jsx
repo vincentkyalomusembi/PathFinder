@@ -13,6 +13,7 @@ import JobSearch from './pages/JobSearch';
 import Analytics from './pages/Analytics';
 import CareerRecommender from './pages/CareerRecommender';
 import KCSECareerGuide from './pages/KCSECareerGuide';
+import JobScraper from './pages/JobScraper';
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/career" element={<CareerRecommender />} />
             <Route path="/kcse-guide" element={<KCSECareerGuide />} />
+            <Route path="/scraper" element={<JobScraper />} />
           </Routes>
         </main>
         <Footer />

@@ -12,6 +12,8 @@ class JobResponse(BaseModel):
     category: str
     description: Optional[str] = None
     skills: List[str] = []
+    apply_url: Optional[str] = None
+    source: Optional[str] = None
 
 #AI schemas
 class RecommendationRequest(BaseModel):
@@ -58,6 +60,11 @@ class SkillData(BaseModel):
     name: str
     count: int
     trend: Optional[str] = None
+
+class CategoryData(BaseModel):
+    name: str
+    count: int
+    percentage: float
 
 # KCSE Career Guidance Schemas
 class KCSECareerRequest(BaseModel):
